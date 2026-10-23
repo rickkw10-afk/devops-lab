@@ -1,0 +1,18 @@
+# git-clone 이 돌려준 40자리 commit 을 image 태그용 7자리로 자른다
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: short-sha
+spec:
+  params:
+    - name: commit
+      type: string
+  results:
+    - name: short
+  steps:
+    - name: cut
+      image: alpine:3.20
+      script: |
+        #!/bin/sh
+        printf '%s' "$(params.commit)" | cut -c1-7 \
+          | tr -d '\n' > $(results.short.path)

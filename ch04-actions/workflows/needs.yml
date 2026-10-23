@@ -1,0 +1,27 @@
+# needs 로 job 순서 만들기. lint 와 test 는 동시에, build 는 둘 다 끝난 뒤.
+name: needs-demo
+
+on: workflow_dispatch
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "lint"
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "test"
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - id: meta
+        run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - run: echo "deploy ${{ needs.build.outputs.tag }}"

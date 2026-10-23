@@ -1,0 +1,16 @@
+# 6장 연습용(광주캠퍼스). ch06-argocd/manifests 와 같은 nginx 앱에 개인 ID 를 붙였다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: skala-gj<N>                 # 반 namespace. namespace.yaml 은 두지 않는다
+namePrefix: <ID>-                      # 이름이 <ID>-nginx-demo 가 된다
+labels:
+  - pairs:
+      owner: <ID>
+    includeSelectors: true
+resources:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+images:
+  - name: nginxinc/nginx-unprivileged  # deployment.yaml 에 적힌 이름
+    newTag: 1.27-alpine               # 1.28-alpine 으로 바꾸고 commit 해 본다

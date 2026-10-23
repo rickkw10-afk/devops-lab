@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-lab-app
+  namespace: argocd                # Application 은 항상 argocd namespace 에 만든다
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/<github-id>/devops-lab.git   # 본인 repository 로 바꾼다
+    targetRevision: main
+    path: ch06-argocd/manifests
+  destination:
+    server: https://kubernetes.default.svc                   # Argo CD 가 설치된 그 클러스터
+    namespace: devops-lab
+  syncPolicy:
+    automated:
+      prune: true                  # Git 에서 지운 리소스는 클러스터에서도 지운다
+      selfHeal: true               # 클러스터에서 손으로 바꾼 것을 Git 상태로 되돌린다
+    syncOptions:
+      - CreateNamespace=true

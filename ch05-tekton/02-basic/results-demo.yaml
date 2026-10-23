@@ -1,0 +1,36 @@
+# params 는 들어오는 값, results 는 나가는 값. 앞 Task 의 results 를 뒤 Task 가 params 로 받는다
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: make-version
+spec:
+  results:
+    - name: version
+      description: 날짜로 만든 버전 문자열
+  steps:
+    - name: make
+      image: alpine:3.20
+      script: |
+        #!/bin/sh
+        printf '%s' "1.0.$(date +%Y%m%d)" > $(results.version.path)
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: results-demo
+spec:
+  tasks:
+    - name: version
+      taskRef:
+        name: make-version
+    - name: print
+      params:
+        - name: v
+          value: $(tasks.version.results.version)   # 이 참조가 곧 순서가 된다
+      taskSpec:
+        params:
+          - name: v
+        steps:
+          - name: print
+            image: alpine:3.20
+            script: echo "version = $(params.v)"

@@ -1,0 +1,68 @@
+# clone → test → image build & push
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: ci-pipeline
+spec:
+  params:
+    - name: repo-url
+      type: string
+    - name: revision
+      type: string
+      default: main
+    - name: image-repo                # 예: harbor.skala-gj.com/skala-gj<N>/<ID>-devops-lab-app-tekton
+      type: string
+  workspaces:
+    - name: shared-data               # clone 한 소스를 Task 끼리 나눠 쓴다
+    - name: docker-credentials        # registry 인증 정보(config.json)
+  tasks:
+    - name: fetch-source
+      taskRef:
+        resolver: hub                 # ClusterTask 대신 Artifact Hub 에서 받아 온다
+        params:
+          - name: name
+            value: git-clone
+          - name: version
+            value: "0.10.0"
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+      workspaces:
+        - name: output
+          workspace: shared-data
+    - name: short-sha
+      taskRef:
+        name: short-sha               # 직접 만든 Task (params 와 results 슬라이드)
+      params:
+        - name: commit
+          value: $(tasks.fetch-source.results.commit)   # 40자리 commit
+    - name: unit-test
+      runAfter: [fetch-source]        # 소스가 다 받아진 뒤에
+      taskRef:
+        name: gradle-test             # 직접 만든 Task (다음 슬라이드)
+      workspaces:
+        - name: source                # gradle-test 쪽 이름
+          workspace: shared-data      # Pipeline 쪽 이름
+    - name: build-push
+      runAfter: [unit-test]           # test 통과 후에만
+      taskRef:
+        resolver: hub
+        params:
+          - name: name
+            value: buildah
+          - name: version
+            value: "0.9.0"
+      params:
+        - name: IMAGE                 # <image-repo>:4f3c2a1
+          value: $(params.image-repo):$(tasks.short-sha.results.short)
+        - name: CONTEXT
+          value: ./app                # Dockerfile 이 app/ 안에 있다
+        - name: DOCKERFILE
+          value: ./app/Dockerfile
+      workspaces:
+        - name: source
+          workspace: shared-data
+        - name: dockerconfig          # config.json 이 들어 있는 폴더
+          workspace: docker-credentials

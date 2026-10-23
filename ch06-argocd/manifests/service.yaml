@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-lab-app
+spec:
+  selector:
+    app: devops-lab-app
+  ports:
+    - port: 80
+      targetPort: 8080

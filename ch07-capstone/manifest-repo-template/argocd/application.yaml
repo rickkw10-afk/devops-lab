@@ -1,0 +1,22 @@
+# 광주캠퍼스 Argo CD(https://argocd.skala-gj.com)에 반 계정으로 등록한다.
+#   argocd app create -f argocd/application.yaml --grpc-web
+# kubectl apply 로는 등록할 수 없다. 반 계정에는 argocd namespace 쓰기 권한이 없다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: <ID>-devops-lab-app        # 4개 반이 Application 이름 공간을 같이 쓴다. 겹치면 등록 실패
+  namespace: argocd
+spec:
+  project: skala-gj<N>             # 반 AppProject. default 프로젝트에는 권한이 없다
+  source:
+    repoURL: https://github.com/<github-id>/devops-lab-manifests.git   # public 이어야 한다
+    targetRevision: main
+    path: devops-lab-app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: skala-gj<N>         # 자기 반 namespace 외에는 AppProject 가 거부한다
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    # CreateNamespace 는 쓰지 않는다. namespace 생성은 클러스터 범위라 반 계정으로는 막혀 있다

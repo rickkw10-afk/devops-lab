@@ -1,0 +1,11 @@
+# 같은 이름으로 다시 돌리려면 먼저 지운다: kubectl delete pipelinerun sample-pipeline-run
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: sample-pipeline-run
+spec:
+  pipelineRef:
+    name: sample-pipeline
+  params:
+    - name: app-name
+      value: my-app

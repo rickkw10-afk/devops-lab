@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: sample-pipeline
+spec:
+  params:
+    - name: app-name
+      type: string
+  tasks:
+    - name: build
+      taskRef:
+        name: build-task
+      params:
+        - name: app-name
+          value: $(params.app-name)
+    - name: test
+      runAfter:
+        - build
+      taskRef:
+        name: test-task
+      params:
+        - name: app-name
+          value: $(params.app-name)

@@ -1,0 +1,14 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: test-task
+spec:
+  params:
+    - name: app-name
+      type: string
+  steps:
+    - name: test
+      image: alpine:3.20
+      script: |
+        #!/bin/sh
+        echo "Testing $(params.app-name)"

@@ -1,0 +1,36 @@
+# 이벤트별 설정 예. 원본 슬라이드의 ’ 따옴표를 바로잡은 버전.
+name: events-demo
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "app/src/**"
+      - "app/build.gradle"
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "배포 환경"
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      dry-run:
+        description: "실제 배포 없이 확인만"
+        type: boolean
+        default: true
+  schedule:
+    - cron: "0 0 * * *"      # 매일 00:00 UTC = 09:00 KST
+
+jobs:
+  show-event:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "event = ${{ github.event_name }}"
+      - if: github.event_name == 'workflow_dispatch'
+        run: echo "env = ${{ inputs.environment }}, dry-run = ${{ inputs.dry-run }}"

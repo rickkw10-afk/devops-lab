@@ -1,0 +1,40 @@
+# 꺼낸 값으로 PipelineRun 을 찍어 낸다
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: ci-template
+spec:
+  params:
+    - name: repo-url
+    - name: revision
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: ci-run-
+      spec:
+        pipelineRef:
+          name: ci-pipeline
+        taskRunTemplate:
+          serviceAccountName: ci-bot
+        params:
+          - name: repo-url
+            value: $(tt.params.repo-url)
+          - name: revision
+            value: $(tt.params.revision)
+          - name: image-repo
+            value: harbor.skala-gj.com/skala-gj<N>/<ID>-devops-lab-app-tekton
+        workspaces:
+          - name: shared-data
+            volumeClaimTemplate:
+              spec:
+                accessModes: [ReadWriteOnce]
+                resources:
+                  requests:
+                    storage: 1Gi
+          - name: docker-credentials
+            secret:
+              secretName: harbor-auth
+              items:
+                - key: .dockerconfigjson
+                  path: config.json

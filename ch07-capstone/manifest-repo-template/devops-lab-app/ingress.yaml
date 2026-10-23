@@ -1,0 +1,19 @@
+# *.skala-gj.com 은 nginx Ingress Controller 로 연결되어 있다.
+# host 는 클러스터 전체에서 하나뿐이어야 하므로 반 namespace 와 개인 ID 를 모두 넣는다.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devops-lab-app
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: skala-gj<N>-<ID>-devops.skala-gj.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: devops-lab-app   # namePrefix 가 붙은 이름으로 함께 바뀐다
+                port:
+                  number: 80

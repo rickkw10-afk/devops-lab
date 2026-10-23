@@ -1,0 +1,11 @@
+# GitHub push 이벤트 JSON 에서 필요한 값만 꺼낸다
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: github-push-binding
+spec:
+  params:
+    - name: repo-url
+      value: $(body.repository.clone_url)
+    - name: revision
+      value: $(body.after)      # 마지막 commit

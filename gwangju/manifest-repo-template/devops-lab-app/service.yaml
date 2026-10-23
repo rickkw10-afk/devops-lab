@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-lab-app
+spec:
+  selector:
+    app: devops-lab-app            # kustomization.yaml 이 owner: <ID> 를 덧붙인다
+  ports:
+    - port: 80
+      targetPort: 8080

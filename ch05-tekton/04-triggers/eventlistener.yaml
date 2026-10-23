@@ -1,0 +1,23 @@
+# HTTP 로 이벤트를 받는 Pod + Service 가 만들어진다 (el-github-listener)
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-listener
+spec:
+  serviceAccountName: tekton-triggers-sa
+  triggers:
+    - name: on-push
+      interceptors:
+        - ref:
+            name: github            # 서명 검증 + 이벤트 종류 거르기
+          params:
+            - name: secretRef
+              value:
+                secretName: github-webhook-secret
+                secretKey: token
+            - name: eventTypes
+              value: ["push"]
+      bindings:
+        - ref: github-push-binding
+      template:
+        ref: ci-template

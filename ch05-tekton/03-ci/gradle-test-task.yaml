@@ -1,0 +1,20 @@
+# 원본 자료의 run-tests 자리. devops-lab/app 을 gradle wrapper 로 test 한다
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: gradle-test
+spec:
+  params:
+    - name: context-dir
+      type: string
+      default: app                   # devops-lab 저장소 안의 앱 폴더
+  workspaces:
+    - name: source                   # 소스가 붙을 자리. 무엇이 붙을지는 Run 이 정한다
+  steps:
+    - name: test
+      image: eclipse-temurin:21-jdk
+      workingDir: $(workspaces.source.path)/$(params.context-dir)
+      script: |
+        #!/bin/sh
+        set -e
+        ./gradlew test --no-daemon   # 실패하면 0 이 아닌 값으로 끝나고 뒤 Task 는 건너뛴다

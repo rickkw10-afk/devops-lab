@@ -1,0 +1,18 @@
+# 광주캠퍼스용. 같은 반 전체가 namespace 하나(skala-gj<N>)를 함께 쓰므로
+# 이름·label·image 에 개인 ID 를 붙여 옆 사람 리소스와 겹치지 않게 한다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: skala-gj<N>              # 반 namespace. 이미 있으므로 namespace.yaml 은 두지 않는다
+namePrefix: <ID>-                   # Deployment·Service·Ingress 이름이 <ID>-devops-lab-app 이 된다
+labels:
+  - pairs:
+      owner: <ID>
+    includeSelectors: true          # selector 에도 넣는다. 빼면 Service 가 옆 사람 Pod 까지 잡는다
+resources:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+images:
+  - name: devops-lab-app
+    newName: harbor.skala-gj.com/skala-gj<N>/<ID>-devops-lab-app
+    newTag: "0000000"               # CI 가 commit 할 때마다 git sha 7자리로 바뀐다

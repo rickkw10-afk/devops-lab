@@ -1,0 +1,12 @@
+# 가장 작은 Task. step 하나 = container 하나, Task 하나 = Pod 하나
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: hello-task
+spec:
+  steps:
+    - name: echo
+      image: alpine:3.20
+      script: |
+        #!/bin/sh
+        echo "Hello Tekton"

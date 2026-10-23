@@ -1,0 +1,81 @@
+# 7장 종합 실습(광주캠퍼스): test → image build·push(Harbor) → manifest repository 의 tag 수정
+# use-harbor-workflow.sh 가 <N> <ID> 를 채워 .github/workflows/ci-cd.yml 로 복사한다.
+# 필요한 Secret 세 개: HARBOR_USERNAME(skala-gj<N>), HARBOR_PASSWORD(반 Harbor 비밀번호), MANIFEST_REPO_TOKEN(PAT)
+name: ci-cd
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/**"]
+  pull_request:
+    branches: [main]
+    paths: ["app/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: harbor.skala-gj.com                                   # https:// 를 붙이지 않는다
+  IMAGE: harbor.skala-gj.com/skala-gj<N>/<ID>-devops-lab-app      # 반 프로젝트 / 개인 ID 를 붙인 repository
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      - run: ./gradlew test --no-daemon
+
+  build-push:
+    needs: test
+    if: github.event_name != 'pull_request'   # PR 에서는 test 만
+    runs-on: ubuntu-latest                    # x86_64 runner. EKS 노드와 같은 amd64 image 가 나온다
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: vars
+        run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: app
+          push: true
+          platforms: linux/amd64
+          tags: ${{ env.IMAGE }}:${{ steps.vars.outputs.tag }}
+          build-args: APP_VERSION=${{ steps.vars.outputs.tag }}
+
+  update-manifest:
+    needs: build-push
+    runs-on: ubuntu-latest
+    concurrency: manifest-update                # 연달아 push 해도 한 번에 하나씩
+    env:
+      TAG: ${{ needs.build-push.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository_owner }}/devops-lab-manifests
+          token: ${{ secrets.MANIFEST_REPO_TOKEN }}  # PAT
+      - name: Set image tag
+        working-directory: devops-lab-app
+        run: kustomize edit set image "devops-lab-app=${IMAGE}:${TAG}"
+      - name: Commit and push
+        run: |
+          git diff --quiet && exit 0            # 같은 tag 면 할 일 없음
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "deploy: devops-lab-app ${TAG}"
+          git push

@@ -1,0 +1,28 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: ci-run-
+spec:
+  pipelineRef:
+    name: ci-pipeline
+  taskRunTemplate:
+    serviceAccountName: ci-bot      # 모든 TaskRun 의 Pod 가 이 계정으로 돈다
+  params:
+    - name: repo-url
+      value: https://github.com/<github-id>/devops-lab.git
+    - name: image-repo
+      value: harbor.skala-gj.com/skala-gj<N>/<ID>-devops-lab-app-tekton   # Actions 의 amd64 image 와 겹치지 않게 -tekton
+  workspaces:
+    - name: shared-data
+      volumeClaimTemplate:          # 실행마다 PVC 를 새로 만들고, 끝나면 같이 정리된다
+        spec:
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 1Gi
+    - name: docker-credentials
+      secret:
+        secretName: harbor-auth     # create-secret.sh 가 만든 Secret
+        items:
+          - key: .dockerconfigjson  # docker-registry Secret 의 키 이름
+            path: config.json       # buildah 가 찾는 파일 이름

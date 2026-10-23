@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-lab-app
+  labels:
+    app: devops-lab-app
+spec:
+  replicas: 1                      # 훈련생 노드를 120명이 나눠 쓴다. 1개면 충분하다
+  selector:
+    matchLabels:
+      app: devops-lab-app
+  template:
+    metadata:
+      labels:
+        app: devops-lab-app
+    spec:
+      imagePullSecrets:
+        - name: harbor-cred        # 반 namespace 에 미리 만들어 둔 Harbor pull 계정
+      containers:
+        - name: app
+          image: devops-lab-app    # 실제 이름과 tag 는 kustomization.yaml 의 images 가 정한다
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
